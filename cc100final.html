@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title> MMSC's Restaurant Menu</title>
+
+  <style>
+    body {
+      font-family: 'Poppins', Arial, sans-serif;
+      background-image: url('https://tse3.mm.bing.net/th/id/OIP.vPRCH5Mtp42TMOps4R9DSgHaE7?rs=1&pid=ImgDetMain');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    header {
+      background: linear-gradient(90deg, #ff6347, #ff8567);
+      color: white;
+      text-align: center;
+      padding: 25px 0;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    header h1 {
+      font-size: 2em;
+      margin: 0;
+    }
+
+    .categories {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      margin: 40px auto 20px;
+      max-width: 1000px;
+    }
+
+    .category {
+      background-color: white;
+      padding: 20px;
+      border-radius: 15px;
+      width: 200px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .category:hover {
+      transform: translateY(-8px);
+      background-color: #ff8567;
+      color: white;
+    }
+
+    .menu {
+      display: none;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 20px auto;
+      max-width: 1100px;
+      gap: 25px;
+    }
+
+    .menu.active {
+      display: flex;
+    }
+
+    .menu-item {
+      background-color: white;
+      width: 250px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      color: black;
+      transition: 0.3s ease;
+      overflow: hidden;
+      padding-bottom: 10px;
+    }
+
+    .menu-item:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    .menu-item img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 15px 15px 0 0;
+    }
+
+    .menu-item h3 {
+      margin: 10px 0 5px;
+      color: #ff6347;
+    }
+
+    .size-select {
+      margin: 8px 0;
+      padding: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .add-btn {
+      background-color: #ff6347;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 15px;
+      margin-top: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .add-btn:hover {
+      background-color: #ff8567;
+    }
+
+    /* === Receipt Section === */
+    .receipt {
+      background-color: white;
+      max-width: 450px;
+      margin: 40px auto;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .receipt h2 {
+      text-align: center;
+      color: #ff6347;
+    }
+
+    #orderList {
+      list-style-type: none;
+      padding: 0;
+      margin: 15px 0;
+    }
+
+    #orderList li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .remove-btn {
+      background-color: #ff4500;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 8px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: 0.3s;
+    }
+
+    .remove-btn:hover {
+      background-color: #ff6347;
+    }
+
+    #total {
+      text-align: right;
+      font-weight: bold;
+      color: #ff4500;
+      margin-top: 15px;
+    }
+
+    .checkout-btn {
+      display: block;
+      background-color: #ff6347;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: 0.3s;
+    }
+
+    .checkout-btn:hover {
+      background-color: #ff8567;
+    }
+
+    .qr-section {
+      text-align: center;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .qr-section img {
+      width: 150px;
+      height: 150px;
+      margin-top: 10px;
+    }
+
+    .thankyou-message {
+      text-align: center;
+      color: green;
+      font-weight: bold;
+      font-size: 1.2em;
+      margin-top: 15px;
+      display: none;
+    }
+
+    footer {
+      background: linear-gradient(90deg, #ff6347, #ff8567);
+      color: white;
+      text-align: center;
+      padding: 15px 0;
+      font-size: 0.9em;
+      margin-top: 40px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🍴 Welcome to MMSC's Restaurant</h1>
+    <p>Select a food size and add to your order</p>
+  </header>
+
+  <!-- === Categories === -->
+  <section class="categories">
+    <div class="category" onclick="showMenu('meals')">🍛 Meals</div>
+    <div class="category" onclick="showMenu('snacks')">🍟 Snacks</div>
+    <div class="category" onclick="showMenu('desserts')">🍰 Desserts</div>
+    <div class="category" onclick="showMenu('drinks')">🥤 Drinks</div>
+  </section>
+
+  <!-- === Meals === -->
+  <section class="menu" id="meals">
+    <div class="menu-item">
+      <img src="https://www.inspiredtaste.net/wp-content/uploads/2019/03/Spaghetti-with-Meat-Sauce-Recipe-1-1200.jpg" alt="Spaghetti" />
+      <h3>Spaghetti</h3>
+      <select class="size-select" id="spaghettiSize">
+        <option value="80">Small - ₱80</option>
+        <option value="100">Medium - ₱100</option>
+        <option value="120">Large - ₱120</option>
+      </select>
+      <button class="add-btn" onclick="addToOrder('Spaghetti', 'spaghettiSize')">Add to Order</button>
+    </div>
+
+    <div class="menu-item">
+      <img src="https://static.vecteezy.com/system/resources/previews/014/214/134/non_2x/delicious-hot-and-crispy-fried-chicken-meat-free-photo.jpg" alt="Fried Chicken" />
+      <h3>Fried Chicken</h3>
+      <select class="size-select" id="chickenSize">
+        <option value="100">Small - ₱100</option>
+        <option value="120">Medium - ₱120</option>
+        <option value="150">Large - ₱150</option>
+      </select>
+      <button class="add-btn" onclick="addToOrder('Fried Chicken', 'chickenSize')">Add to Order</button>
+    </div>
+  </section>
+
+  <!-- === Snacks === -->
+  <section class="menu" id="snacks">
+    <div class="menu-item">
+      <img src="https://www.thespruceeats.com/thmb/IHKuXcx3uUI1IWkM_cnnQdFH-zQ=/3485x2323/filters:fill(auto,1)/how-to-make-homemade-french-fries-2215971-hero-01-02f62a016f3e4aa4b41d0c27539885c3.jpg" alt="French Fries" />
+      <h3>French Fries</h3>
+      <select class="size-select" id="friesSize">
+        <option value="50">Small - ₱50</option>
+        <option value="60">Medium - ₱60</option>
+        <option value="75">Large - ₱75</option>
+      </select>
+      <button class="add-btn" onclick="addToOrder('French Fries', 'friesSize')">Add to Order</button>
+    </div>
+  </section>
+
+  <!-- === Desserts === -->
+  <section class="menu" id="desserts">
+    <div class="menu-item">
+      <img src="https://tse3.mm.bing.net/th/id/OIP.ZawCXvEJjt_60_2FdcBJdAHaEJ?cb=12&pid=ImgDet&w=193&h=108&c=7&dpr=1.1&o=7&rm=3" alt="Ice Cream" />
+      <h3>Ice Cream</h3>
+      <select class="size-select" id="iceCreamSize">
+        <option value="40">Small - ₱40</option>
+        <option value="50">Medium - ₱50</option>
+        <option value="65">Large - ₱65</option>
+      </select>
+      <button class="add-btn" onclick="addToOrder('Ice Cream', 'iceCreamSize')">Add to Order</button>
+    </div>
+  </section>
+
+  <!-- === Drinks === -->
+  <section class="menu" id="drinks">
+    <div class="menu-item">
+      <img src="https://t4.ftcdn.net/jpg/05/55/59/73/360_F_555597360_XRtkPKnICGlDjzvDo2WXdSV6DRHpHFP6.jpg" alt="Soft Drink" />
+      <h3>Soft Drink</h3>
+      <select class="size-select" id="drinkSize">
+        <option value="25">Small - ₱25</option>
+        <option value="35">Medium - ₱35</option>
+        <option value="45">Large - ₱45</option>
+      </select>
+      <button class="add-btn" onclick="addToOrder('Soft Drink', 'drinkSize')">Add to Order</button>
+    </div>
+  </section>
+
+  <!-- === RECEIPT SECTION === -->
+  <section class="receipt">
+    <h2>🧾 Order Receipt</h2>
+    <ul id="orderList"></ul>
+    <div id="total">Total: ₱0</div>
+    <button class="checkout-btn" onclick="showQRCode()">Proceed to Payment</button>
+
+    <div class="qr-section" id="qrSection">
+      <p>Scan this QR code to pay:</p>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=GCash%20Payment%20for%20Marga's%20Restaurant" alt="Payment QR Code" />
+      <button class="checkout-btn" onclick="sendOrder()">Confirm Payment</button>
+    </div>
+
+    <div class="thankyou-message" id="thankyouMsg">✅ Your order has been sent! Thank you for dining with us.</div>
+  </section>
+
+  <footer>
+    <p>© 2025 Marga's Restaurant | All Rights Reserved</p>
+  </footer>
+
+  <script>
+    function showMenu(category) {
+      document.querySelectorAll('.menu').forEach(menu => menu.classList.remove('active'));
+      document.getElementById(category).classList.add('active');
+      window.scrollTo({ top: 300, behavior: 'smooth' });
+    }
+
+    let total = 0;
+
+    function addToOrder(item, sizeId) {
+      const sizeSelect = document.getElementById(sizeId);
+      const price = parseInt(sizeSelect.value);
+      const sizeText = sizeSelect.options[sizeSelect.selectedIndex].text.split(" - ")[0];
+
+      const orderList = document.getElementById('orderList');
+      const li = document.createElement('li');
+      li.innerHTML = `${item} (${sizeText}) — ₱${price} 
+        <button class="remove-btn" onclick="removeOrder(this, ${price})">🗑</button>`;
+      orderList.appendChild(li);
+
+      total += price;
+      updateTotal();
+    }
+
+    function removeOrder(button, price) {
+      button.parentElement.remove();
+      total -= price;
+      if (total < 0) total = 0;
+      updateTotal();
+    }
+
+    function updateTotal() {
+      document.getElementById('total').textContent = `Total: ₱${total}`;
+    }
+
+    function showQRCode() {
+      if (total === 0) {
+        alert("Your order is empty!");
+        return;
+      }
+      document.getElementById('qrSection').style.display = 'block';
+    }
+
+    function sendOrder() {
+      document.getElementById('qrSection').style.display = 'none';
+      document.getElementById('thankyouMsg').style.display = 'block';
+      document.getElementById('orderList').innerHTML = '';
+      total = 0;
+      updateTotal();
+    }
+  </script>
+
+</body>
+</html>
