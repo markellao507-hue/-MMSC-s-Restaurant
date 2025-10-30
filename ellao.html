@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MMSC's Restaurant Menu (With Admin Dashboard)</title>
+  <style>
+    /* --- base / existing styles (kept mostly as you had) --- */
+    body {
+      font-family: 'Poppins', Arial, sans-serif;
+      background-image: url('https://tse3.mm.bing.net/th/id/OIP.vPRCH5Mtp42TMOps4R9DSgHaE7?rs=1&pid=ImgDetMain');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    header {
+      background: linear-gradient(90deg, #ff6347, #ff8567);
+      color: white;
+      text-align: center;
+      padding: 18px 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    header .title {
+      display:flex;
+      flex-direction: column;
+      align-items:flex-start;
+    }
+    header h1 {
+      font-size: 1.4em;
+      margin: 0;
+      padding:0;
+    }
+    header p { margin:0; font-size:0.85em; opacity:0.95;}
+    .admin-btn {
+      background: white;
+      color: #ff6347;
+      border-radius: 8px;
+      padding: 8px 12px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+
+    main { padding: 20px; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 360px; gap: 20px; }
+
+    /* categories and menu */
+    .categories { display:flex; flex-wrap:wrap; justify-content:flex-start; gap:12px; margin-bottom: 18px; }
+    .category { background-color: white; padding: 12px 14px; border-radius: 12px; cursor:pointer; box-shadow: 0 3px 8px rgba(0,0,0,0.12); }
+    .menu { display:none; gap:18px; flex-wrap:wrap; }
+    .menu.active { display:flex; }
+    .menu-item { background-color: white; width:260px; border-radius: 12px; text-align:center; box-shadow: 0 4px 12px rgba(0,0,0,0.12); overflow:hidden; padding-bottom: 10px; }
+    .menu-item img { width:100%; height:160px; object-fit:cover; border-radius:12px 12px 0 0; }
+    .menu-item h3 { margin:10px 0 6px; color:#ff6347; }
+    .size-select { margin: 6px; padding:6px; border-radius:6px; }
+    .add-btn { background-color:#ff6347; color:white; border:none; border-radius:8px; padding:8px 12px; margin-top:6px; cursor:pointer; }
+
+    /* receipt (right column) */
+    .receipt { background-color:white; border-radius:12px; padding:14px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); position:relative; }
+    .receipt h2 { text-align:center; color:#ff6347; margin:6px 0 12px; }
+    #orderList { list-style:none; padding:0; margin:0; max-height:300px; overflow:auto; }
+    #orderList li { display:flex; justify-content:space-between; padding:8px 6px; border-bottom:1px solid #eee; align-items:center; gap:8px;}
+    .remove-btn { background:#ff4500; color:white; border:none; border-radius:6px; padding:6px 8px; cursor:pointer; }
+    #total { text-align:right; font-weight:bold; color:#ff4500; margin-top:10px; }
+    .checkout-btn { width:100%; margin-top:10px; padding:10px; border-radius:10px; background:#ff6347; color:white; border:none; cursor:pointer; }
+
+    /* QR + thank you */
+    .qr-section { text-align:center; margin-top:10px; display:none; }
+    .thankyou-message { text-align:center; color:green; font-weight:bold; font-size:1.05em; margin-top:12px; display:none; }
+
+    footer { background: linear-gradient(90deg, #ff6347, #ff8567); color: white; text-align: center; padding: 12px 0; font-size: 0.9em; margin-top: 16px; border-radius:0 0 0 0; grid-column: 1 / -1; }
+
+    /* === ADMIN PANEL === */
+    .admin-panel { display:none; background: rgba(255,255,255,0.98); padding:12px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.16); }
+    .admin-panel.visible { display:block; }
+    .admin-header { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; }
+    .orders-list { max-height: 420px; overflow:auto; padding:6px; border-radius:8px; border:1px solid #eee; }
+    .order-card { background:white; padding:8px; border-radius:8px; margin-bottom:8px; box-shadow:0 2px 6px rgba(0,0,0,0.06); }
+    .order-meta { display:flex; justify-content:space-between; align-items:center; gap:6px; }
+    .badge { padding:4px 8px; border-radius:6px; font-weight:bold; }
+    .badge.new { background:#ffedf0; color:#c0392b; }
+    .badge.received { background:#e8f7ee; color:#2a8a49; }
+    .admin-controls button { margin-left:6px; padding:6px 8px; border-radius:6px; border:none; cursor:pointer; }
+
+    /* quick toast */
+    .toast { position: fixed; right: 18px; bottom: 18px; background: #111; color: #fff; padding: 12px 16px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.3); display:none; z-index:9999; }
+
+    /* responsive */
+    @media (max-width: 920px) {
+      main { grid-template-columns: 1fr; padding:12px; }
+      .receipt { order:2; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1>🍴 Welcome to MMSC's Restaurant</h1>
+      <p>Select a food size and add to your order</p>
+    </div>
+    <div>
+      <button class="admin-btn" id="openAdminBtn">Open Admin Panel</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- LEFT: Menu & categories -->
+    <section>
+      <div class="categories">
+        <div class="category" onclick="showMenu('meals')">🍛 Meals</div>
+        <div class="category" onclick="showMenu('snacks')">🍟 Snacks</div>
+        <div class="category" onclick="showMenu('desserts')">🍰 Desserts</div>
+        <div class="category" onclick="showMenu('drinks')">🥤 Drinks</div>
+      </div>
+
+      <!-- MEALS -->
+      <div class="menu active" id="meals">
+        <div class="menu-item">
+          <img src="https://www.inspiredtaste.net/wp-content/uploads/2019/03/Spaghetti-with-Meat-Sauce-Recipe-1-1200.jpg" alt="Spaghetti" />
+          <h3>Spaghetti</h3>
+          <select class="size-select" id="spaghettiSize">
+            <option value="80">Small - ₱80</option>
+            <option value="100">Medium - ₱100</option>
+            <option value="120">Large - ₱120</option>
+          </select>
+          <button class="add-btn" onclick="addToOrder('Spaghetti','spaghettiSize')">Add to Order</button>
+        </div>
+
+        <div class="menu-item">
+          <img src="https://static.vecteezy.com/system/resources/previews/014/214/134/non_2x/delicious-hot-and-crispy-fried-chicken-meat-free-photo.jpg" alt="Fried Chicken" />
+          <h3>Fried Chicken</h3>
+          <select class="size-select" id="chickenSize">
+            <option value="100">Small - ₱100</option>
+            <option value="120">Medium - ₱120</option>
+            <option value="150">Large - ₱150</option>
+          </select>
+          <button class="add-btn" onclick="addToOrder('Fried Chicken','chickenSize')">Add to Order</button>
+        </div>
+      </div>
+
+      <!-- SNACKS -->
+      <div class="menu" id="snacks">
+        <div class="menu-item">
+          <img src="https://www.thespruceeats.com/thmb/IHKuXcx3uUI1IWkM_cnnQdFH-zQ=/3485x2323/filters:fill(auto,1)/how-to-make-homemade-french-fries-2215971-hero-01-02f62a016f3e4aa4b41d0c27539885c3.jpg" alt="French Fries" />
+          <h3>French Fries</h3>
+          <select class="size-select" id="friesSize">
+            <option value="50">Small - ₱50</option>
+            <option value="60">Medium - ₱60</option>
+            <option value="75">Large - ₱75</option>
+          </select>
+          <button class="add-btn" onclick="addToOrder('French Fries','friesSize')">Add to Order</button>
+        </div>
+      </div>
+
+      <!-- DESSERTS -->
+      <div class="menu" id="desserts">
+        <div class="menu-item">
+          <img src="https://tse3.mm.bing.net/th/id/OIP.ZawCXvEJjt_60_2FdcBJdAHaEJ?cb=12&pid=ImgDet&w=193&h=108&c=7&dpr=1.1&o=7&rm=3" alt="Ice Cream" />
+          <h3>Ice Cream</h3>
+          <select class="size-select" id="iceCreamSize">
+            <option value="40">Small - ₱40</option>
+            <option value="50">Medium - ₱50</option>
+            <option value="65">Large - ₱65</option>
+          </select>
+          <button class="add-btn" onclick="addToOrder('Ice Cream','iceCreamSize')">Add to Order</button>
+        </div>
+      </div>
+
+      <!-- DRINKS -->
+      <div class="menu" id="drinks">
+        <div class="menu-item">
+          <img src="https://t4.ftcdn.net/jpg/05/55/59/73/360_F_555597360_XRtkPKnICGlDjzvDo2WXdSV6DRHpHFP6.jpg" alt="Soft Drink" />
+          <h3>Soft Drink</h3>
+          <select class="size-select" id="drinkSize">
+            <option value="25">Small - ₱25</option>
+            <option value="35">Medium - ₱35</option>
+            <option value="45">Large - ₱45</option>
+          </select>
+          <button class="add-btn" onclick="addToOrder('Soft Drink','drinkSize')">Add to Order</button>
+        </div>
+      </div>
+
+      <!-- ADMIN PANEL (left column, below menu) -->
+      <div id="adminPanel" class="admin-panel" aria-hidden="true">
+        <div class="admin-header">
+          <div>
+            <strong>Admin Dashboard</strong>
+            <div style="font-size:0.85em;color:#666;">Realtime orders & notifications</div>
+          </div>
+          <div>
+            <button id="btnRequestNotif">Enable Notifications</button>
+            <button id="closeAdmin" class="admin-btn" style="background:#fff;color:#ff6347;">Close</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:8px;">
+          <label style="font-size:0.9em;color:#444;">Filter:</label>
+          <select id="orderFilter" onchange="renderOrders()">
+            <option value="all">All</option>
+            <option value="new">New</option>
+            <option value="received">Received</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+
+        <div class="orders-list" id="ordersList">
+          <!-- filled by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Receipt & Checkout -->
+    <aside>
+      <div class="receipt">
+        <h2>🧾 Order Receipt</h2>
+        <ul id="orderList"></ul>
+        <div id="total">Total: ₱0</div>
+        <button class="checkout-btn" onclick="showQRCode()">Proceed to Payment</button>
+
+        <div class="qr-section" id="qrSection">
+          <p>Scan this QR code to pay:</p>
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=GCash%20Payment%20for%20MMSC%20Restaurant" alt="Payment QR Code" />
+          <button class="checkout-btn" onclick="confirmAndSendOrder()">Confirm Payment</button>
+        </div>
+
+        <div class="thankyou-message" id="thankyouMsg">✅ Your order has been sent! Thank you for dining with us.</div>
+      </div>
+    </aside>
+
+    <div class="toast" id="toast">New order received</div>
+  </main>
+
+  <footer>
+    <p>© 2025 MMSC's Restaurant | All Rights Reserved</p>
+  </footer>
+
+  <script>
+    /* ==========================
+       Helper / Storage functions
+       ========================== */
+
+    function getOrdersFromStorage() {
+      try {
+        const raw = localStorage.getItem('mmsc_orders');
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        console.error('Error reading orders from localStorage', e);
+        return [];
+      }
+    }
+
+    function saveOrdersToStorage(orders) {
+      localStorage.setItem('mmsc_orders', JSON.stringify(orders));
+      // write a timestamp so other tabs can detect change even if data same
+      localStorage.setItem('mmsc_orders_updated_at', new Date().toISOString());
+    }
+
+    function pushOrderToStorage(order) {
+      const orders = getOrdersFromStorage();
+      orders.unshift(order); // newest first
+      saveOrdersToStorage(orders);
+    }
+
+    /* ==========================
+       Menu & Order logic (customer)
+       ========================== */
+    let runningTotal = 0;
+
+    function showMenu(category) {
+      document.querySelectorAll('.menu').forEach(m => m.classList.remove('active'));
+      document.getElementById(category).classList.add('active');
+      window.scrollTo({ top: 200, behavior: 'smooth' });
+    }
+
+    function addToOrder(item, sizeId) {
+      const sizeSelect = document.getElementById(sizeId);
+      const price = parseInt(sizeSelect.value, 10);
+      const sizeText = sizeSelect.options[sizeSelect.selectedIndex].text.split(" - ")[0];
+
+      const orderList = document.getElementById('orderList');
+      const li = document.createElement('li');
+      li.dataset.price = price;
+      li.innerHTML = `<div>${item} (${sizeText})</div><div style="display:flex;gap:8px;align-items:center;"><span>₱${price}</span><button class="remove-btn" onclick="removeOrder(this)">🗑</button></div>`;
+      orderList.appendChild(li);
+
+      runningTotal += price;
+      updateTotal();
+    }
+
+    function removeOrder(btn) {
+      const li = btn.closest('li');
+      const p = parseInt(li.dataset.price || '0', 10);
+      li.remove();
+      runningTotal -= p;
+      if (runningTotal < 0) runningTotal = 0;
+      updateTotal();
+    }
+
+    function updateTotal() {
+      document.getElementById('total').textContent = `Total: ₱${runningTotal}`;
+    }
+
+    function showQRCode() {
+      if (runningTotal === 0) {
+        alert("Your order is empty!");
+        return;
+      }
+      document.getElementById('qrSection').style.display = 'block';
+    }
+
+    /* ==========================
+       Confirm & Send Order (customer)
+       Saves to localStorage and optionally POSTs to Google script
+       ========================== */
+
+    function confirmAndSendOrder() {
+      const orders = [];
+      document.querySelectorAll('#orderList li').forEach(li => {
+        const text = li.querySelector('div').innerText;
+        const match = text.match(/(.*)\((.*)\)/);
+        const itemName = match ? match[1].trim() : text;
+        const size = match ? match[2].trim() : 'Regular';
+        const price = parseInt(li.dataset.price || '0', 10);
+        orders.push({ item: itemName, size, price });
+      });
+
+      if (orders.length === 0) {
+        alert("Your order is empty!");
+        return;
+      }
+
+      const customerName = prompt("Enter your name:", "Guest") || "Guest";
+      const newOrder = {
+        id: 'ORD-' + Date.now(),
+        customer: customerName,
+        orders: orders,
+        total: runningTotal,
+        status: 'new',
+        createdAt: new Date().toISOString()
+      };
+
+      // Save locally (so admin panel can see it immediately)
+      pushOrderToStorage(newOrder);
+
+      // Optional: still try to send to Google Apps Script (kept for your integration)
+      const scriptURL = "https://script.google.com/macros/s/AKfycbyXpnaO2-cOOmX_X_e1B8ZxU9RsPPVNGN5elENPOX2OkcmY9oeJPAIeLkFoG8MUDD44/exec";
+
+      // attempt fetch but do not block local save
+      fetch(scriptURL, {
+        method: 'POST',
+        mode: 'no-cors', // your script may require CORS changes if you want response
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrder)
+      }).catch(err => {
+        console.warn('Google script send failed (ok if no internet or CORS):', err);
+      });
+
+      // Clear UI
+      document.getElementById('orderList').innerHTML = '';
+      runningTotal = 0;
+      updateTotal();
+      document.getElementById('qrSection').style.display = 'none';
+      const thank = document.getElementById('thankyouMsg');
+      thank.style.display = 'block';
+      setTimeout(() => thank.style.display = 'none', 4500);
+    }
+
+    /* ==========================
+       ADMIN Panel & Notifications
+       ========================== */
+
+    const adminPanel = document.getElementById('adminPanel');
+    const openAdminBtn = document.getElementById('openAdminBtn');
+    const closeAdminBtn = document.getElementById('closeAdmin');
+    const ordersListContainer = document.getElementById('ordersList');
+    const toast = document.getElementById('toast');
+
+    openAdminBtn.addEventListener('click', () => {
+      // Simple password gate (change 'admin123' to your desired password)
+      const pw = prompt('Enter admin password:');
+      if (!pw) return;
+      if (pw !== 'admin123') {
+        alert('Wrong password.');
+        return;
+      }
+      adminPanel.classList.add('visible');
+      adminPanel.setAttribute('aria-hidden', 'false');
+      // request notification permission when admin opens
+      if (Notification.permission !== 'granted') {
+        // guided enable: user can click the enable button in panel
+        // or we can request immediately
+        Notification.requestPermission();
+      }
+      renderOrders();
+    });
+
+    closeAdminBtn.addEventListener('click', () => {
+      adminPanel.classList.remove('visible');
+      adminPanel.setAttribute('aria-hidden', 'true');
+    });
+
+    document.getElementById('btnRequestNotif').addEventListener('click', async () => {
+      if ('Notification' in window) {
+        const perm = await Notification.requestPermission();
+        alert('Notification permission: ' + perm);
+      } else {
+        alert('Notifications are not supported in this browser.');
+      }
+    });
+
+    // Renders orders in admin panel based on filter
+    function renderOrders() {
+      const allOrders = getOrdersFromStorage();
+      const filter = document.getElementById('orderFilter').value;
+      const filtered = allOrders.filter(o => filter === 'all' ? true : (o.status === filter));
+      ordersListContainer.innerHTML = '';
+      if (filtered.length === 0) {
+        ordersListContainer.innerHTML = '<div style="color:#666;padding:8px;">No orders found.</div>';
+        return;
+      }
+      filtered.forEach(order => {
+        const div = document.createElement('div');
+        div.className = 'order-card';
+        div.innerHTML = `
+          <div class="order-meta">
+            <div><strong>${order.customer}</strong> <div style="font-size:0.85em;color:#666;">${new Date(order.createdAt).toLocaleString()}</div></div>
+            <div style="text-align:right;">
+              <div class="badge ${order.status === 'new' ? 'new' : order.status === 'received' ? 'received' : ''}">${order.status.toUpperCase()}</div>
+              <div style="font-weight:bold;margin-top:6px;">₱${order.total}</div>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            ${order.orders.map(it => `<div style="font-size:0.95em;">• ${it.item} (${it.size}) — ₱${it.price}</div>`).join('')}
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px;" class="admin-controls">
+            ${order.status !== 'received' ? `<button onclick="markReceived('${order.id}')">Mark Received</button>` : ''}
+            ${order.status !== 'completed' ? `<button onclick="markCompleted('${order.id}')">Mark Completed</button>` : ''}
+            <button onclick="deleteOrder('${order.id}')">Delete</button>
+          </div>
+        `;
+        ordersListContainer.appendChild(div);
+      });
+    }
+
+    // mark order as received
+    function markReceived(id) {
+      const orders = getOrdersFromStorage();
+      const idx = orders.findIndex(o => o.id === id);
+      if (idx === -1) return;
+      orders[idx].status = 'received';
+      saveOrdersToStorage(orders);
+      renderOrders();
+    }
+    // mark as completed
+    function markCompleted(id) {
+      const orders = getOrdersFromStorage();
+      const idx = orders.findIndex(o => o.id === id);
+      if (idx === -1) return;
+      orders[idx].status = 'completed';
+      saveOrdersToStorage(orders);
+      renderOrders();
+    }
+    function deleteOrder(id) {
+      if (!confirm('Delete this order permanently?')) return;
+      const orders = getOrdersFromStorage().filter(o => o.id !== id);
+      saveOrdersToStorage(orders);
+      renderOrders();
+    }
+
+    // show toast
+    let toastTimer = null;
+    function showToast(msg = 'New order received') {
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.style.display = 'none';
+      }, 4000);
+    }
+
+    // play beep sound
+    function playBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = 880;
+        g.gain.value = 0.05;
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start();
+        setTimeout(()=>{ o.stop(); ctx.close(); }, 300);
+      } catch (e) {
+        // ignore audio errors
+      }
+    }
+
+    // Trigger browser notification + toast + sound
+    function notifyAdmin(order) {
+      const title = `New order: ${order.customer} — ₱${order.total}`;
+      // browser notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const n = new Notification(title, { body: `${order.orders.length} items — ${new Date(order.createdAt).toLocaleTimeString()}`, tag: order.id });
+        n.onclick = () => {
+          window.focus();
+          adminPanel.classList.add('visible');
+          renderOrders();
+        };
+      }
+      showToast(title);
+      playBeep();
+    }
+
+    /* ==========================
+       Detect new orders in storage & notify admin
+       - We listen to storage events (other tabs) and poll fallback
+       ========================== */
+
+    // Keep a snapshot of known order IDs to detect new ones
+    let knownOrderIds = new Set(getOrdersFromStorage().map(o => o.id));
+
+    // Called when storage changes or on interval
+    function checkForNewOrders() {
+      const orders = getOrdersFromStorage();
+      // find new orders present in storage but not known locally
+      for (const o of orders) {
+        if (!knownOrderIds.has(o.id)) {
+          knownOrderIds.add(o.id);
+          // only notify when status is 'new'
+          if (o.status === 'new') notifyAdmin(o);
+        }
+      }
+      // cleanup: remove ids not in storage anymore
+      const currentIds = new Set(orders.map(o => o.id));
+      knownOrderIds.forEach(id => { if (!currentIds.has(id)) knownOrderIds.delete(id); });
+      // update admin panel if visible
+      if (adminPanel.classList.contains('visible')) renderOrders();
+    }
+
+    // Listen for storage events (works when other tabs change localStorage)
+    window.addEventListener('storage', (ev) => {
+      if (ev.key === 'mmsc_orders' || ev.key === 'mmsc_orders_updated_at') {
+        checkForNewOrders();
+      }
+    });
+
+    // Periodic check fallback (in case storage event missed)
+    setInterval(checkForNewOrders, 1500);
+
+    // On first load run check
+    checkForNewOrders();
+
+    // Also show admin if admin opens and there are new orders
+    // (admin opens handled above)
+
+    /* ==========================
+       For convenience: expose functions to window for inline onClick
+       ========================== */
+    window.addToOrder = addToOrder;
+    window.removeOrder = removeOrder;
+    window.showMenu = showMenu;
+    window.showQRCode = showQRCode;
+    window.confirmAndSendOrder = confirmAndSendOrder;
+    window.renderOrders = renderOrders;
+    window.markReceived = markReceived;
+    window.markCompleted = markCompleted;
+    window.deleteOrder = deleteOrder;
+
+    /* ==========================
+       Accessibility / small UX improvements
+       ========================== */
+    // Close admin on Esc
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        adminPanel.classList.remove('visible');
+      }
+    });
+
+    // Keep known IDs in sync when orders saved locally via UI
+    const originalPushOrder = pushOrderToStorage;
+    // override to update knownIndex quickly
+    window.pushOrderToStorage = function (order) {
+      originalPushOrder(order);
+      knownOrderIds.add(order.id);
+      checkForNewOrders();
+    };
+
+  </script>
+</body>
+</html>
